@@ -18,10 +18,14 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //nolint:paralleltest // changes directory for process
@@ -76,4 +80,44 @@ func TestInvalidPolicyPackTemplateName(t *testing.T) {
 		assert.Error(t, err)
 		assertNotFoundError(t, err)
 	})
+}
+
+func skipIfShortOrNoPulumiAccessToken(t *testing.T) {
+	_, ok := os.LookupEnv("PULUMI_ACCESS_TOKEN")
+	if !ok {
+		t.Skipf("Skipping: PULUMI_ACCESS_TOKEN is not set")
+	}
+	if testing.Short() {
+		t.Skip("Skipped in short test run")
+	}
+}
+
+func chdir(t *testing.T, dir string) {
+	cwd, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.NoError(t, os.Chdir(dir)) // Set directory
+	t.Cleanup(func() {
+		assert.NoError(t, os.Chdir(cwd)) // Restore directory
+		restoredDir, err := os.Getwd()
+		assert.NoError(t, err)
+		assert.Equal(t, cwd, restoredDir)
+	})
+}
+
+func tempProjectDir(t *testing.T) string {
+	t.Helper()
+
+	dir := filepath.Join(t.TempDir(), genUniqueName(t))
+	require.NoError(t, os.MkdirAll(dir, 0o700))
+	return dir
+}
+
+func genUniqueName(t *testing.T) string {
+	t.Helper()
+
+	var bs [8]byte
+	_, err := rand.Read(bs[:])
+	require.NoError(t, err)
+
+	return "test-" + hex.EncodeToString(bs[:])
 }
