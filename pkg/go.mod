@@ -112,6 +112,7 @@ require (
 	golang.org/x/term v0.23.0
 	golang.org/x/text v0.17.0
 	google.golang.org/protobuf v1.35.1
+	gopkg.in/yaml.v2 v2.4.0
 	lukechampine.com/frand v1.4.2
 )
 
