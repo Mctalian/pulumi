@@ -501,7 +501,6 @@ func TestPackageSetUpdatesTo(t *testing.T) {
 							Value:   []byte("data"),
 						},
 					},
-
 					New: workspace.PackageDescriptor{
 						PluginSpec: workspace.PluginSpec{
 							Name:    "foo",
