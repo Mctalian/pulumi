@@ -116,11 +116,13 @@ func (p PackageSet) UpdatesTo(old PackageSet) []PackageUpdate {
 			if namesEqual {
 				version := value.Version
 				if value.Parameterization != nil {
-					version = &value.Parameterization.Version
+					v := value.Parameterization.Version
+					version = &v
 				}
 				otherVersion := otherValue.Version
 				if otherValue.Parameterization != nil {
-					otherVersion = &otherValue.Parameterization.Version
+					v := otherValue.Parameterization.Version
+					version = &v
 				}
 
 				if version != nil && otherVersion != nil && version.GT(*otherVersion) {
