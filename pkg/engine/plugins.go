@@ -47,14 +47,14 @@ const (
 type PackageSet map[string]workspace.PackageDescriptor
 
 // Add adds a package to this package set.
-func (p PackageSet) Add(plug workspace.PackageDescriptor) {
-	p[plug.String()] = plug
+func (p PackageSet) Add(pkg workspace.PackageDescriptor) {
+	p[pkg.String()] = pkg
 }
 
-// NewPackageSet creates a new empty pluginSet.
-func NewPackageSet(plugins ...workspace.PackageDescriptor) PackageSet {
-	var s PackageSet = make(map[string]workspace.PackageDescriptor, len(plugins))
-	for _, p := range plugins {
+// NewPackageSet creates a new empty package set.
+func NewPackageSet(pkgs ...workspace.PackageDescriptor) PackageSet {
+	var s PackageSet = make(map[string]workspace.PackageDescriptor, len(pkgs))
+	for _, p := range pkgs {
 		s.Add(p)
 	}
 	return s
@@ -93,21 +93,37 @@ type PackageUpdate struct {
 // PackageSet. For instance, if the argument contains a package P at version 3, and this PackageSet contains the same
 // package P (as identified by name and kind) at version 5, this method will return an update where the Old field
 // contains the version 3 instance from the argument and the New field contains the version 5 instance from this
-// PackageSet.
+// PackageSet. This also considers parameterization information, so a parameterized package P at version 3 will be
+// considered different from a parameterized package P at version 5 even if the base plugin is the same.
 func (p PackageSet) UpdatesTo(old PackageSet) []PackageUpdate {
 	var updates []PackageUpdate
 	for _, value := range p {
 		for _, otherValue := range old {
-			namesEqual := value.Name == otherValue.Name && value.Kind == otherValue.Kind &&
-				(value.Parameterization == nil || otherValue.Parameterization == nil ||
-					value.Parameterization.Name == otherValue.Parameterization.Name)
+			// This is comparing _package_ names. i.e. the plugin name if parameterization is nil, or the
+			// parameterization name if its present.
+
+			name := value.Name
+			if value.Parameterization != nil {
+				name = value.Parameterization.Name
+			}
+			otherName := otherValue.Name
+			if otherValue.Parameterization != nil {
+				otherName = otherValue.Parameterization.Name
+			}
+
+			namesEqual := name == otherName && value.Kind == otherValue.Kind
 
 			if namesEqual {
-				if value.Version != nil && otherValue.Version != nil && value.Version.GT(*otherValue.Version) {
-					updates = append(updates, PackageUpdate{Old: otherValue, New: value})
+				version := value.Version
+				if value.Parameterization != nil {
+					version = &value.Parameterization.Version
 				}
-				if value.Parameterization != nil && otherValue.Parameterization != nil &&
-					value.Parameterization.Version.GT(otherValue.Parameterization.Version) {
+				otherVersion := otherValue.Version
+				if otherValue.Parameterization != nil {
+					otherVersion = &otherValue.Parameterization.Version
+				}
+
+				if version != nil && otherVersion != nil && version.GT(*otherVersion) {
 					updates = append(updates, PackageUpdate{Old: otherValue, New: value})
 				}
 			}
@@ -123,18 +139,6 @@ type PluginSet map[string]workspace.PluginSpec
 // Add adds a plugin to this plugin set.
 func (p PluginSet) Add(plug workspace.PluginSpec) {
 	p[plug.String()] = plug
-}
-
-// Union returns the union of this pluginSet with another pluginSet.
-func (p PluginSet) Union(other PluginSet) PluginSet {
-	newSet := NewPluginSet()
-	for _, value := range p {
-		newSet.Add(value)
-	}
-	for _, value := range other {
-		newSet.Add(value)
-	}
-	return newSet
 }
 
 // Removes less specific entries.
@@ -248,13 +252,13 @@ func gatherPackagesFromProgram(plugctx *plugin.Context, runtime string, info plu
 		return nil, fmt.Errorf("failed to load language plugin %s: %w", runtime, err)
 	}
 
-	deps, err := lang.GetRequiredPackages(info)
+	pkgs, err := lang.GetRequiredPackages(info)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover package requirements: %w", err)
 	}
 
 	set := NewPackageSet()
-	for _, pkg := range deps {
+	for _, pkg := range pkgs {
 		logging.V(preparePluginLog).Infof(
 			"gatherPackagesFromProgram(): package %s (%s) is required by language host",
 			pkg.String(), pkg.PluginDownloadURL)

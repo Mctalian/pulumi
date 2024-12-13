@@ -218,6 +218,7 @@ func TestPackageSetUpdatesTo(t *testing.T) {
 			news: NewPackageSet(workspace.PackageDescriptor{
 				PluginSpec: workspace.PluginSpec{
 					Name:    "foo",
+					Kind:    apitype.ResourcePlugin,
 					Version: &semver.Version{Major: 1},
 				},
 			}),
@@ -228,6 +229,7 @@ func TestPackageSetUpdatesTo(t *testing.T) {
 			olds: NewPackageSet(workspace.PackageDescriptor{
 				PluginSpec: workspace.PluginSpec{
 					Name:    "foo",
+					Kind:    apitype.ResourcePlugin,
 					Version: &semver.Version{Major: 1},
 				},
 			}),
@@ -239,12 +241,14 @@ func TestPackageSetUpdatesTo(t *testing.T) {
 			olds: NewPackageSet(workspace.PackageDescriptor{
 				PluginSpec: workspace.PluginSpec{
 					Name:    "foo",
+					Kind:    apitype.ResourcePlugin,
 					Version: &semver.Version{Major: 1},
 				},
 			}),
 			news: NewPackageSet(workspace.PackageDescriptor{
 				PluginSpec: workspace.PluginSpec{
 					Name:    "bar",
+					Kind:    apitype.ResourcePlugin,
 					Version: &semver.Version{Major: 1},
 				},
 			}),
@@ -429,6 +433,130 @@ func TestPackageSetUpdatesTo(t *testing.T) {
 							Name:    "baz",
 							Kind:    apitype.AnalyzerPlugin,
 							Version: &semver.Version{Major: 4},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Base plugin and parameterized package",
+			olds: NewPackageSet(workspace.PackageDescriptor{
+				PluginSpec: workspace.PluginSpec{
+					Name:    "foo",
+					Kind:    apitype.ResourcePlugin,
+					Version: &semver.Version{Major: 1},
+				},
+			}),
+			news: NewPackageSet(workspace.PackageDescriptor{
+				PluginSpec: workspace.PluginSpec{
+					Name:    "foo",
+					Kind:    apitype.ResourcePlugin,
+					Version: &semver.Version{Major: 2},
+				},
+				Parameterization: &workspace.Parameterization{
+					Name:    "bar",
+					Version: semver.Version{Major: 2},
+					Value:   []byte("data"),
+				},
+			}),
+			expected: nil,
+		},
+		{
+			name: "Parameterized package update",
+			olds: NewPackageSet(workspace.PackageDescriptor{
+				PluginSpec: workspace.PluginSpec{
+					Name:    "foo",
+					Kind:    apitype.ResourcePlugin,
+					Version: &semver.Version{Major: 1},
+				},
+				Parameterization: &workspace.Parameterization{
+					Name:    "bar",
+					Version: semver.Version{Major: 1},
+					Value:   []byte("data"),
+				},
+			}),
+			news: NewPackageSet(workspace.PackageDescriptor{
+				PluginSpec: workspace.PluginSpec{
+					Name:    "foo",
+					Kind:    apitype.ResourcePlugin,
+					Version: &semver.Version{Major: 1},
+				},
+				Parameterization: &workspace.Parameterization{
+					Name:    "bar",
+					Version: semver.Version{Major: 2},
+					Value:   []byte("data"),
+				},
+			}),
+			expected: []PackageUpdate{
+				{
+					Old: workspace.PackageDescriptor{
+						PluginSpec: workspace.PluginSpec{
+							Name:    "foo",
+							Kind:    apitype.ResourcePlugin,
+							Version: &semver.Version{Major: 1},
+						},
+						Parameterization: &workspace.Parameterization{
+							Name:    "bar",
+							Version: semver.Version{Major: 1},
+							Value:   []byte("data"),
+						},
+					},
+
+					New: workspace.PackageDescriptor{
+						PluginSpec: workspace.PluginSpec{
+							Name:    "foo",
+							Kind:    apitype.ResourcePlugin,
+							Version: &semver.Version{Major: 1},
+						},
+						Parameterization: &workspace.Parameterization{
+							Name:    "bar",
+							Version: semver.Version{Major: 2},
+							Value:   []byte("data"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Non-parameterized to parameterized package update",
+			olds: NewPackageSet(workspace.PackageDescriptor{
+				PluginSpec: workspace.PluginSpec{
+					Name:    "foo",
+					Kind:    apitype.ResourcePlugin,
+					Version: &semver.Version{Major: 1},
+				},
+			}),
+			news: NewPackageSet(workspace.PackageDescriptor{
+				PluginSpec: workspace.PluginSpec{
+					Name:    "base",
+					Kind:    apitype.ResourcePlugin,
+					Version: &semver.Version{Major: 1},
+				},
+				Parameterization: &workspace.Parameterization{
+					Name:    "foo",
+					Version: semver.Version{Major: 2},
+					Value:   []byte("data"),
+				},
+			}),
+			expected: []PackageUpdate{
+				{
+					Old: workspace.PackageDescriptor{
+						PluginSpec: workspace.PluginSpec{
+							Name:    "foo",
+							Kind:    apitype.ResourcePlugin,
+							Version: &semver.Version{Major: 1},
+						},
+					},
+					New: workspace.PackageDescriptor{
+						PluginSpec: workspace.PluginSpec{
+							Name:    "base",
+							Kind:    apitype.ResourcePlugin,
+							Version: &semver.Version{Major: 1},
+						},
+						Parameterization: &workspace.Parameterization{
+							Name:    "foo",
+							Version: semver.Version{Major: 2},
+							Value:   []byte("data"),
 						},
 					},
 				},

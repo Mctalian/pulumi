@@ -789,10 +789,11 @@ func TestRefreshUpgradeWarning(t *testing.T) {
 		"than the specified program version: 4.13.0 < 4.16.7")
 }
 
-// Similar to TestRefreshUpgradeWarning above, but test that this correctly picks up changes to paramaterised packages.
+// Similar to TestRefreshUpgradeWarning above, but test that this correctly picks up changes to paramaterised
+// packages and it tests destroy instead of refresh.
 //
 //nolint:paralleltest // pulumi new is not parallel safe
-func TestRefreshUpgradeWarningParameterised(t *testing.T) {
+func TestDestroyUpgradeWarningParameterised(t *testing.T) {
 	e := ptesting.NewEnvironment(t)
 	defer deleteIfNotFailed(e)
 
@@ -827,8 +828,8 @@ func TestRefreshUpgradeWarningParameterised(t *testing.T) {
 	// Update the provider to a new version
 	e.RunCommand("pulumi", "package", "add", "terraform-provider", "hashicorp/random", "3.6.3")
 
-	// Run a refresh and check that the warning is shown
-	stdout, _ := e.RunCommand("pulumi", "refresh", "--yes")
-	assert.Contains(t, stdout, "refresh operation is using an older version of package 'random' "+
+	// Run a destroy and check that the warning is shown
+	stdout, _ := e.RunCommand("pulumi", "destroy", "--yes")
+	assert.Contains(t, stdout, "destroy operation is using an older version of package 'random' "+
 		"than the specified program version: 3.6.0 < 3.6.3")
 }
